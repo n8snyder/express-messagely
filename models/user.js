@@ -3,6 +3,7 @@
 const bcrypt = require("bcrypt");
 const db = require("../db");
 const { BCRYPT_WORK_FACTOR } = require("../config");
+const { rows } = require("pg/lib/defaults");
 
 /** User of the site. */
 class User {
@@ -56,7 +57,7 @@ class User {
 
   static async all() {
     const result = await db.query(
-      `SELECT username, first_name, last_name 
+      `SELECT username, first_name, last_name
       FROM users`);
     return result.rows;
   }
@@ -76,6 +77,9 @@ class User {
         FROM users
         WHERE username = $1`,
       [username]);
+
+    if (!result.rows[0]) throw new NotFoundError(`No such user: ${username}`);
+
     return result.rows[0];
   }
 
@@ -88,13 +92,33 @@ class User {
    */
 
   static async messagesFrom(username) {
-    const result = await db.query(
+    const results = await db.query(
       `SELECT id, to_username AS to_user, body, sent_at, read_at
         FROM messages
         WHERE from_username = $1`,
       [username]);
 
-    return result.rows;
+    const msgs = results.rows;
+    const userCache = {};
+
+    for(let msg of msgs){
+      if(!userCache[`${msg.to_user}`]){
+        const user = await db.query(
+          `SELECT username, first_name, last_name, phone
+            FROM users
+            WHERE username = $1`,
+            [msg.to_user]
+        );
+
+        msg.to_user = user.rows[0];
+        userCache[`${msg.to_user}`] = user.rows[0];
+      }
+      else{
+        msg.to_user = userCache[`${msg.to_user}`];
+      }
+    }
+
+    return msgs;
   }
 
   /** Return messages to this user.
@@ -106,6 +130,33 @@ class User {
    */
 
   static async messagesTo(username) {
+    const results = await db.query(
+      `SELECT id, from_username AS from_user, body, sent_at, read_at
+        FROM messages
+        WHERE to_username = $1`,
+      [username]);
+
+    const msgs = results.rows;
+    const userCache = {};
+
+    for(let msg of msgs){
+      if(!userCache[`${msg.from_user}`]){
+        const user = await db.query(
+          `SELECT username, first_name, last_name, phone
+            FROM users
+            WHERE username = $1`,
+            [msg.from_user]
+        );
+
+        msg.from_user = user.rows[0];
+        userCache[`${msg.from_user}`] = user.rows[0];
+      }
+      else{
+        msg.from_user = userCache[`${msg.from_user}`];
+      }
+    }
+
+    return msgs;
   }
 }
 
