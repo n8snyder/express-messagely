@@ -1,7 +1,6 @@
 "use strict";
 
 const bcrypt = require("bcrypt");
-
 const db = require("../db");
 const { BCRYPT_WORK_FACTOR } = require("../config");
 
@@ -26,11 +25,31 @@ class User {
   /** Authenticate: is username/password valid? Returns boolean. */
 
   static async authenticate(username, password) {
+    const result = await db.query(
+      `SELECT password
+        FROM users
+        WHERE username = $1`,
+        [username]
+    );
+    const user = result.rows[0];
+
+    if(user === undefined){
+      if(await bcrypt.compare(password, user.password) === true){
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Update last_login_at for user */
 
   static async updateLoginTimestamp(username) {
+    const result = await db.query(
+      `UPDATE users
+        SET last_login_at = CURRENT_TIMESTAMP()
+        WHERE username = $1`,
+        [username]
+    )
   }
 
   /** All: basic info on all users:
