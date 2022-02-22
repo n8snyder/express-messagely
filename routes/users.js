@@ -1,6 +1,7 @@
 "use strict";
 
 const User = require("../models/user");
+const { ensureCorrectUser, ensureLoggedIn } = require("../middleware/auth");
 
 const Router = require("express").Router;
 const router = new Router();
@@ -11,10 +12,10 @@ const router = new Router();
  * => {users: [{username, first_name, last_name}, ...]}
  *
  **/
-router.get("/", async function (req, res, next) {
-    const users = await User.all();
+router.get("/", ensureLoggedIn, async function (req, res, next) {
+  const users = await User.all();
 
-    return res.send({ users: users });
+  return res.send({ users: users });
 });
 
 
@@ -24,10 +25,10 @@ router.get("/", async function (req, res, next) {
  *
  **/
 
-router.get("/:username", async function (req, res, next) {
-    const user = await User.get(req.params.username);
+router.get("/:username", ensureCorrectUser, async function (req, res, next) {
+  const user = await User.get(req.params.username);
 
-    return res.send({ user: user });
+  return res.send({ user: user });
 });
 
 
@@ -40,10 +41,10 @@ router.get("/:username", async function (req, res, next) {
  *                 from_user: {username, first_name, last_name, phone}}, ...]}
  *
  **/
-router.get("/:username/to", async function (req, res, next) {
-    const msgs = await User.messagesTo(req.params.username);
+router.get("/:username/to", ensureCorrectUser, async function (req, res, next) {
+  const msgs = await User.messagesTo(req.params.username);
 
-    return res.send({ messages: msgs });
+  return res.send({ messages: msgs });
 });
 
 
@@ -56,5 +57,10 @@ router.get("/:username/to", async function (req, res, next) {
  *                 to_user: {username, first_name, last_name, phone}}, ...]}
  *
  **/
+router.get("/:username/from", ensureCorrectUser, async function (req, res, next) {
+  const msgs = await User.messagesFrom(req.params.username);
+
+  return res.send({ messages: msgs });
+});
 
 module.exports = router;
