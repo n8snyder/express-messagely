@@ -16,11 +16,14 @@ class User {
   static async register({ username, password, first_name, last_name, phone }) {
     const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
     const result = await db.query(
-      `INSERT INTO users (username, password, first_name, last_name, phone, join_at)
+      `INSERT INTO users (
+        username, password, first_name,
+        last_name, phone, join_at, last_login_at)
         VALUES
-          ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+          ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING username, password, first_name, last_name, phone`,
       [username, hashedPassword, first_name, last_name, phone]);
+
     return result.rows[0];
   }
 
@@ -59,7 +62,10 @@ class User {
   static async all() {
     const result = await db.query(
       `SELECT username, first_name, last_name
-      FROM users`);
+      FROM users
+      ORDER BY username`);
+
+    console.log(result.rows);
     return result.rows;
   }
 
@@ -102,19 +108,19 @@ class User {
     const msgs = results.rows;
     const userCache = {};
 
-    for(let msg of msgs){
-      if(!userCache[`${msg.to_user}`]){
+    for (let msg of msgs) {
+      if (!userCache[`${msg.to_user}`]) {
         const user = await db.query(
           `SELECT username, first_name, last_name, phone
             FROM users
             WHERE username = $1`,
-            [msg.to_user]
+          [msg.to_user]
         );
 
         msg.to_user = user.rows[0];
         userCache[`${msg.to_user}`] = user.rows[0];
       }
-      else{
+      else {
         msg.to_user = userCache[`${msg.to_user}`];
       }
     }
@@ -140,19 +146,19 @@ class User {
     const msgs = results.rows;
     const userCache = {};
 
-    for(let msg of msgs){
-      if(!userCache[`${msg.from_user}`]){
+    for (let msg of msgs) {
+      if (!userCache[`${msg.from_user}`]) {
         const user = await db.query(
           `SELECT username, first_name, last_name, phone
             FROM users
             WHERE username = $1`,
-            [msg.from_user]
+          [msg.from_user]
         );
 
         msg.from_user = user.rows[0];
         userCache[`${msg.from_user}`] = user.rows[0];
       }
-      else{
+      else {
         msg.from_user = userCache[`${msg.from_user}`];
       }
     }

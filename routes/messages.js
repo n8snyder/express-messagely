@@ -2,6 +2,7 @@
 
 const Message = require("../models/message");
 const { ensureLoggedIn } = require("../middleware/auth");
+const read = require("body-parser/lib/read");
 const Router = require("express").Router;
 const router = new Router();
 
@@ -42,7 +43,7 @@ router.get("/:id", async function (req, res, next) {
 router.post("/", ensureLoggedIn, async function (req, res, next) {
   const { to_username, body } = req.body;
   const msgData = { from_username: res.locals.user.username, to_username, body }
-  const newMsg = Message.create(msgData);
+  const newMsg = await Message.create(msgData);
   return res.send({ message: newMsg });
 });
 
@@ -54,6 +55,20 @@ router.post("/", ensureLoggedIn, async function (req, res, next) {
  * Makes sure that the only the intended recipient can mark as read.
  *
  **/
+router.post("/:id/read", async function (req, res, next) {
+  let msg = await Message.get(req.params.id);
+
+  try {
+    if (msg.to_user !== res.locals.user.username) {
+      throw new UnauthorizedError();
+    } else {
+      msg = await Message.markRead(req.params.id);
+      return res.send({ message: { id: msg.id, read_at: msg.read_at } });
+    }
+  } catch (err) {
+    return next(err);
+  }
+});
 
 
 module.exports = router;
