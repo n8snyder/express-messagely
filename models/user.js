@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const db = require("../db");
 const { BCRYPT_WORK_FACTOR } = require("../config");
 const { rows } = require("pg/lib/defaults");
+const { NotFoundError } = require("../expressError");
 
 /** User of the site. */
 class User {

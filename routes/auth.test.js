@@ -60,7 +60,7 @@ describe("Auth Routes Test", function () {
       });
     });
 
-    test.only("won't login w/wrong password", async function () {
+    test("won't login w/wrong password", async function () {
       let response = await request(app)
         .post("/auth/login")
         .send({ username: "test1", password: "WRONG" });
