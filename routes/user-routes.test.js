@@ -94,7 +94,16 @@ describe("User Routes Test", function () {
           last_login_at: expect.any(String)
         }
       });
-    })
+    });
+
+    test("fail to get non-existent user", async function(){
+        const token3 = jwt.sign({ username: "badUser" }, SECRET_KEY)
+        let response = await request(app)
+            .get(`/users/badUser`)
+            .send({ _token: token1 });
+
+            expect(response.statusCode).toEqual(404);
+    });
 
     test("logged out user", async function () {
       let response = await request(app)

@@ -135,32 +135,61 @@ class User {
    *   {id, first_name, last_name, phone}
    */
 
+
   static async messagesTo(username) {
+    // const results = await db.query(
+    //   `SELECT id, from_username AS from_user, body, sent_at, read_at
+    //     FROM messages
+    //     WHERE to_username = $1`,
+    //   [username]);
+
+    // const msgs = results.rows;
+    // const userCache = {};
+
+    // for (let msg of msgs) {
+    //   if (!userCache[`${msg.from_user}`]) {
+    //     const user = await db.query(
+    //       `SELECT username, first_name, last_name, phone
+    //         FROM users
+    //         WHERE username = $1`,
+    //       [msg.from_user]
+    //     );
+
+    //     msg.from_user = user.rows[0];
+    //     userCache[`${msg.from_user}`] = user.rows[0];
+    //   }
+    //   else {
+    //     msg.from_user = userCache[`${msg.from_user}`];
+    //   }
+    // }
+
     const results = await db.query(
-      `SELECT id, from_username AS from_user, body, sent_at, read_at
-        FROM messages
+      `SELECT m.id, m.from_username AS from_user, m.body, m.sent_at, m.read_at,
+        u.username, u.first_name, u.last_name, u.phone
+        FROM messages AS m
+        JOIN users AS u ON m.from_username = u.username
         WHERE to_username = $1`,
-      [username]);
+        [username]
+    );
 
-    const msgs = results.rows;
-    const userCache = {};
+    const msgs = [];
 
-    for (let msg of msgs) {
-      if (!userCache[`${msg.from_user}`]) {
-        const user = await db.query(
-          `SELECT username, first_name, last_name, phone
-            FROM users
-            WHERE username = $1`,
-          [msg.from_user]
-        );
-
-        msg.from_user = user.rows[0];
-        userCache[`${msg.from_user}`] = user.rows[0];
-      }
-      else {
-        msg.from_user = userCache[`${msg.from_user}`];
-      }
+    for(let msg of results.rows){
+      msgs.push({
+        id: msg.id,
+        from_user:
+          {
+            username: msg.username,
+            first_name: msg.first_name,
+            last_name: msg.last_name,
+            phone: msg.phone
+          },
+          body: msg.body,
+          sent_at: msg.sent_at,
+          read_at: msg.read_at
+      });
     }
+
 
     return msgs;
   }
