@@ -65,7 +65,6 @@ class User {
       FROM users
       ORDER BY username`);
 
-    console.log(result.rows);
     return result.rows;
   }
 
